@@ -1,13 +1,13 @@
 // Inicialización de Firebase
-const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID",
-  measurementId: "TU_MEASUREMENT_ID"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyBd25hLnwk72yO9E7ovKkB6Ba5RA0F_3aI",
+    authDomain: "redecol-74a1b.firebaseapp.com",
+    projectId: "redecol-74a1b",
+    storageBucket: "redecol-74a1b.appspot.com",
+    messagingSenderId: "286437914537",
+    appId: "1:286437914537:web:151e8791eed28189fef6b8",
+    measurementId: "G-M9MJ2LJ010"
+  };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
