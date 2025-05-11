@@ -1,96 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seguimiento de Recicladores - REDECOL</title>
-    <link rel="stylesheet" href="styles.css" />
-
-    <!-- API de Google Maps con callback correcto -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seguimiento de Recicladores - REDECOL</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="https://www.google.com/favicon.ico">
 </head>
 <body>
 
 <header>
-    <img src="LOGO SIN FONDO.png" alt="Logo REDECOL E.S.P." id="logo">
-    <h1>REDECOL E.S.P.</h1>
-    <p>Seguimiento de Recolección</p>
+  <img src="LOGO SIN FONDO.png" alt="Logo REDECOL E.S.P." id="logo">
+  <h1>REDECOL E.S.P.</h1>
+  <p>Seguimiento de Recolección</p>
 </header>
 
 <div class="container">
-    <h2>Registro de Usuario</h2>
-    <form id="registroForm">
-        <input type="text" id="nombre" placeholder="Nombre o Razón Social" required>
-        <input type="text" id="nit" placeholder="NIT o Cédula" required>
-        <input type="text" id="direccion" placeholder="Dirección" required>
-        <input type="text" id="sector" placeholder="Sector" required>
-        <input type="text" id="telefono" placeholder="Teléfono" required>
-        <input type="email" id="correo" placeholder="Correo Electrónico" required>
-        <button type="submit">Registrar</button>
-    </form>
+  <h2>Registro de Usuario</h2>
+  <form id="registroForm">
+    <input type="text" id="nombre" placeholder="Nombre o Razón Social" required>
+    <input type="text" id="nit" placeholder="NIT o Cédula" required>
+    <input type="text" id="direccion" placeholder="Dirección" required>
+    <input type="text" id="sector" placeholder="Sector" required>
+    <input type="text" id="telefono" placeholder="Teléfono" required>
+    <input type="email" id="correo" placeholder="Correo Electrónico" required>
+    <button type="submit">Registrar</button>
+  </form>
 
-    <hr>
+  <hr>
 
-    <h2>Control de Seguimiento</h2>
-    <input type="text" id="nombreReciclador" placeholder="Nombre o ID del reciclador">
-    <div class="buttons">
-        <button id="iniciarSeguimiento" onclick="iniciarSeguimiento()">📍 Iniciar seguimiento</button>
-        <button id="detenerSeguimiento" onclick="detenerSeguimiento()" disabled>⏹️ Detener seguimiento</button>
-        <button id="grabarRecorrido" onclick="toggleGrabarRecorrido()">⏺️ Grabar Recorrido</button>
-    </div>
+  <h2>Control de Seguimiento</h2>
+  <input type="text" id="nombreReciclador" placeholder="Nombre o ID del reciclador">
+  <div class="buttons">
+    <button id="iniciarSeguimiento" onclick="iniciarSeguimiento()">📍 Iniciar seguimiento</button>
+    <button id="detenerSeguimiento" onclick="detenerSeguimiento()" disabled>⏹️ Detener seguimiento</button>
+    <button id="grabarRecorrido" onclick="toggleGrabarRecorrido()">⏺️ Grabar Recorrido</button>
+  </div>
 
-    <h3>Estado del Servicio:</h3>
-    <div class="buttons">
-        <button onclick="cambiarEstado('Disponible')">Disponible</button>
-        <button onclick="cambiarEstado('En Ruta')">En Ruta</button>
-        <button onclick="cambiarEstado('Finalizado')">Finalizado</button>
-    </div>
+  <h3>Estado del Servicio:</h3>
+  <div class="buttons">
+    <button onclick="cambiarEstado('Disponible')">Disponible</button>
+    <button onclick="cambiarEstado('En Ruta')">En Ruta</button>
+    <button onclick="cambiarEstado('Finalizado')">Finalizado</button>
+  </div>
 
-    <h3>Visualización de Rutas:</h3>
-    <div class="buttons">
-        <button onclick="cargarRuta()">Ver mi ruta</button>
-        <button onclick="mostrarTrayectoria(document.getElementById('nombreReciclador').value)">Ver trayectoria individual</button>
-        <button onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
-    </div>
+  <h3>Visualización de Rutas:</h3>
+  <div class="buttons">
+    <button onclick="cargarRuta()">Ver mi ruta</button>
+    <button onclick="mostrarTrayectoria(document.getElementById('nombreReciclador').value)">Ver trayectoria individual</button>
+    <button onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
+  </div>
 
-    <h3>Seguimiento en Vivo</h3>
-    <div class="buttons">
-        <button onclick="verEnVivo()">📡 Ver en vivo</button>
-    </div>
+  <h3>Seguimiento en Vivo</h3>
+  <div class="buttons">
+    <button onclick="verEnVivo()">📡 Ver en vivo</button>
+  </div>
 
-    <h3>Fotos en Ruta</h3>
-    <div class="buttons">
-        <button onclick="toggleCamera()">📷 Activar/Desactivar Cámara</button>
-        <button onclick="mostrarFotosEnMapa()">🖼️ Ver Fotos en el Mapa</button>
-        <button onclick="mostrarTodasFotos()">🌍 Ver todas las fotos</button>
-        <button onclick="generarReportePDF()">📄 Generar Reporte en PDF</button>
-    </div>
+  <h3>Fotos en Ruta</h3>
+  <div class="buttons">
+    <button onclick="toggleCamera()">📷 Activar/Desactivar Cámara</button>
+    <button onclick="mostrarFotosEnMapa()">🖼️ Ver Fotos en el Mapa</button>
+    <button onclick="mostrarTodasFotos()">🌍 Ver todas las fotos</button>
+    <button onclick="generarReportePDF()">📄 Generar Reporte en PDF</button>
+  </div>
 
-    <div id="cameraContainer" style="display: none;">
-        <video id="cameraFeed" autoplay></video>
-        <button id="takePhoto" onclick="takePicture()">Tomar Foto</button>
-        <canvas id="photoCanvas" style="display: none;"></canvas>
-        <div id="photoPreview"></div>
-    </div>
+  <div id="cameraContainer" style="display: none;">
+    <video id="cameraFeed" autoplay></video>
+    <button id="takePhoto" onclick="takePicture()">Tomar Foto</button>
+    <canvas id="photoCanvas" style="display: none;"></canvas>
+    <div id="photoPreview"></div>
+  </div>
 
-    <div id="map"></div>
+  <div id="map"></div>
 
-    <h3>Descargar Datos:</h3>
-    <div class="buttons">
-        <button onclick="descargarRutaCSV()">Descargar Ruta (CSV)</button>
-        <button onclick="descargarTrayectoriaImagen()">Descargar Trayectoria (Imagen)</button>
-    </div>
+  <h3>Descargar Datos:</h3>
+  <div class="buttons">
+    <button onclick="descargarRutaCSV()">Descargar Ruta (CSV)</button>
+    <button onclick="descargarTrayectoriaImagen()">Descargar Trayectoria (Imagen)</button>
+  </div>
 
-    <h2>Usuarios Registrados</h2>
-    <table id="tablaUsuarios">
-        <thead>
-            <tr>
-                <th>Nombre</th><th>NIT/Cédula</th><th>Dirección</th>
-                <th>Sector</th><th>Teléfono</th><th>Correo</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+  <h2>Usuarios Registrados</h2>
+  <table id="tablaUsuarios">
+    <thead>
+      <tr>
+        <th>Nombre</th><th>NIT/Cédula</th><th>Dirección</th>
+        <th>Sector</th><th>Teléfono</th><th>Correo</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </div>
 
 <!-- Firebase y jsPDF -->
@@ -115,6 +113,12 @@
   const storage = firebase.storage();
 </script>
 
+<!-- Tu script personalizado debe cargarse antes del mapa -->
 <script src="script.js"></script>
+
+<!-- Google Maps API al final para evitar error initMap -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async"></script>
+
 </body>
 </html>
+
