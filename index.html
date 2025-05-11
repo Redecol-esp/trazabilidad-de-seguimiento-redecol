@@ -75,8 +75,8 @@
 
   <h3>Descargar Datos:</h3>
   <div class="buttons">
-    <button type="button" onclick="descargarRutaCSV()">Descargar Ruta (CSV)</button>
-    <button type="button" onclick="descargarTrayectoriaImagen()">Descargar Trayectoria (Imagen)</button>
+    <button type="button" onclick="descargarRutaXLSX()">📥 Descargar Ruta (.xlsx)</button>
+    <button type="button" onclick="descargarTrayectoriaImagen()">🖼️ Descargar Trayectoria (Imagen)</button>
   </div>
 
   <h2>Usuarios Registrados</h2>
@@ -101,6 +101,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
+<!-- SheetJS para generar archivos Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyBd25hLnwk72yO9E7ovKkB6Ba5RA0F_3aI",
@@ -116,8 +119,30 @@
   const db = firebase.firestore();
   const storage = firebase.storage();
 
-  // Asegúrate de que initMap existe para evitar error si el script se carga antes
+  // Asegúrate de que initMap existe
   function initMap() {}
+
+  // Ejemplo: arreglo de coordenadas (simulación)
+  let coordinates = []; // Este debe llenarse con lat/lng/address reales durante el seguimiento
+
+  function descargarRutaXLSX() {
+    if (coordinates.length === 0) {
+      alert("No hay coordenadas para exportar.");
+      return;
+    }
+
+    const worksheetData = coordinates.map(coord => ({
+      Latitud: coord.lat,
+      Longitud: coord.lng,
+      Dirección: coord.address || "Sin dirección"
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ruta");
+
+    XLSX.writeFile(workbook, "ruta_reciclador.xlsx");
+  }
 </script>
 
 <script src="script.js"></script>
