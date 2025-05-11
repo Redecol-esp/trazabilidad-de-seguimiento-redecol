@@ -23,7 +23,7 @@ let photoStream = null;
 
 // --- Inicializar Mapa ---
 function initMap() {
-  const centro = { lat: 7.0652, lng: -73.8514 }; // Barrancabermeja
+  const centro = { lat: 7.0652, lng: -73.8514 };
   map = new google.maps.Map(document.getElementById("map"), {
     center: centro,
     zoom: 14,
@@ -56,7 +56,7 @@ function iniciarSeguimiento() {
         timestamp: new Date()
       };
       rutaReciclador.push(ubicacion);
-      trayectoriaPolyline.getPath().push(ubicacion);
+      trayectoriaPolyline.getPath().push(new google.maps.LatLng(ubicacion.lat, ubicacion.lng));
       map.setCenter(ubicacion);
       await db.collection("rutas").doc(nombre).collection("ubicaciones").add(ubicacion);
     },
@@ -81,25 +81,26 @@ function detenerSeguimiento() {
 }
 window.detenerSeguimiento = detenerSeguimiento;
 
-// --- Grabación de recorrido ---
+// --- Grabar Recorrido ---
 function toggleGrabarRecorrido() {
   grabandoRecorrido = !grabandoRecorrido;
   document.getElementById("grabarRecorrido").textContent = grabandoRecorrido ? "■ Detener Grabación" : "⏺️ Grabar Recorrido";
 }
 window.toggleGrabarRecorrido = toggleGrabarRecorrido;
 
-// --- Mostrar ruta ---
+// --- Mostrar Ruta Propia ---
 function cargarRuta() {
   if (!rutaReciclador.length) return alert("No hay ruta aún.");
   const bounds = new google.maps.LatLngBounds();
-  rutaReciclador.forEach(p => bounds.extend(p));
+  rutaReciclador.forEach(p => bounds.extend(new google.maps.LatLng(p.lat, p.lng)));
   map.fitBounds(bounds);
 }
 window.cargarRuta = cargarRuta;
 
-// --- Trayectoria individual ---
+// --- Mostrar Trayectoria Individual ---
 function mostrarTrayectoria(nombre) {
   if (!rutaReciclador.length) return alert("No hay trayectoria.");
+
   const path = rutaReciclador.map(p => new google.maps.LatLng(p.lat, p.lng));
   const poly = new google.maps.Polyline({
     path,
@@ -108,7 +109,10 @@ function mostrarTrayectoria(nombre) {
     strokeWeight: 4,
     map
   });
-  map.fitBounds(new google.maps.LatLngBounds(...path));
+
+  const bounds = new google.maps.LatLngBounds();
+  path.forEach(p => bounds.extend(p));
+  map.fitBounds(bounds);
 }
 window.mostrarTrayectoria = mostrarTrayectoria;
 
@@ -189,7 +193,7 @@ function descargarRutaCSV() {
 }
 window.descargarRutaCSV = descargarRutaCSV;
 
-// --- Descargar imagen de trayectoria ---
+// --- Descargar Imagen Trayectoria ---
 function descargarTrayectoriaImagen() {
   html2canvas(document.getElementById("map")).then(canvas => {
     const link = document.createElement("a");
@@ -200,7 +204,7 @@ function descargarTrayectoriaImagen() {
 }
 window.descargarTrayectoriaImagen = descargarTrayectoriaImagen;
 
-// --- Placeholder funciones ---
+// --- Funciones no implementadas ---
 window.mostrarFotosEnMapa = () => alert("Aún no implementado.");
 window.mostrarTodasFotos = () => alert("Aún no implementado.");
 window.generarReportePDF = () => alert("Aún no implementado.");
