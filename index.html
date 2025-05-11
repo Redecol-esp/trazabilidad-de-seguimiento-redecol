@@ -32,9 +32,9 @@
   <h2>Control de Seguimiento</h2>
   <input type="text" id="nombreReciclador" placeholder="Nombre o ID del reciclador">
   <div class="buttons">
-    <button id="iniciarSeguimiento" type="button">📍 Iniciar seguimiento</button>
-    <button id="detenerSeguimiento" type="button" disabled>⏹️ Detener seguimiento</button>
-    <button id="grabarRecorrido" type="button">⏺️ Grabar Recorrido</button>
+    <button id="iniciarSeguimiento" type="button" onclick="iniciarSeguimiento()">📍 Iniciar seguimiento</button>
+    <button id="detenerSeguimiento" type="button" onclick="detenerSeguimiento()" disabled>⏹️ Detener seguimiento</button>
+    <button id="grabarRecorrido" type="button" onclick="toggleGrabarRecorrido()">⏺️ Grabar Recorrido</button>
   </div>
 
   <h3>Estado del Servicio:</h3>
@@ -54,12 +54,12 @@
   <h3>Seguimiento en Vivo</h3>
   <div class="buttons">
     <button type="button" onclick="verEnVivo()">📡 Ver en vivo</button>
-    <button type="button" onclick="verTodosEnVivo()">🧭 Ver todos en tiempo real</button>
   </div>
 
   <h3>Fotos en Ruta</h3>
   <div class="buttons">
     <button type="button" onclick="toggleCamera()">📷 Activar/Desactivar Cámara</button>
+    <button type="button" onclick="takePicture()">📸 Tomar Foto</button>
     <button type="button" onclick="mostrarFotosEnMapa()">🖼️ Ver Fotos en el Mapa</button>
     <button type="button" onclick="mostrarTodasFotos()">🌍 Ver todas las fotos</button>
     <button type="button" onclick="generarReportePDF()">📄 Generar Reporte en PDF</button>
@@ -67,16 +67,15 @@
 
   <div id="cameraContainer" style="display: none;">
     <video id="cameraFeed" autoplay></video>
-    <button id="takePhoto" type="button" onclick="takePicture()">Tomar Foto</button>
     <canvas id="photoCanvas" style="display: none;"></canvas>
     <div id="photoPreview"></div>
   </div>
 
-  <div id="map" style="height: 400px; width: 100%;"></div>
+  <div id="map" style="height: 400px; width: 100%; margin-top: 20px;"></div>
 
   <h3>Descargar Datos:</h3>
   <div class="buttons">
-    <button type="button" onclick="descargarRutaXLSX()">📥 Descargar Ruta (.xlsx)</button>
+    <button type="button" onclick="descargarRutaCSV()">📥 Descargar Ruta (CSV)</button>
     <button type="button" onclick="descargarTrayectoriaImagen()">🖼️ Descargar Trayectoria (Imagen)</button>
   </div>
 
@@ -84,46 +83,24 @@
   <table id="tablaUsuarios">
     <thead>
       <tr>
-        <th>Nombre</th>
-        <th>NIT/Cédula</th>
-        <th>Dirección</th>
-        <th>Sector</th>
-        <th>Teléfono</th>
-        <th>Correo</th>
+        <th>Nombre</th><th>NIT/Cédula</th><th>Dirección</th>
+        <th>Sector</th><th>Teléfono</th><th>Correo</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 </div>
 
-<!-- Firebase y herramientas externas -->
+<!-- Dependencias externas -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<!-- Firebase config -->
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBd25hLnwk72yO9E7ovKkB6Ba5RA0F_3aI",
-    authDomain: "redecol-74a1b.firebaseapp.com",
-    projectId: "redecol-74a1b",
-    storageBucket: "redecol-74a1b.appspot.com",
-    messagingSenderId: "286437914537",
-    appId: "1:286437914537:web:151e8791eed28189fef6b8",
-    measurementId: "G-M9MJ2LJ010"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const storage = firebase.storage();
-</script>
-
-<!-- Script principal (tu lógica personalizada) -->
+<!-- Script principal -->
 <script src="script.js"></script>
 
-<!-- Google Maps API al final para evitar error de initMap -->
+<!-- Google Maps API -->
 <script async defer
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async">
 </script>
