@@ -54,6 +54,7 @@
   <h3>Seguimiento en Vivo</h3>
   <div class="buttons">
     <button type="button" onclick="verEnVivo()">📡 Ver en vivo</button>
+    <button type="button" onclick="verTodosEnVivo()">🧭 Ver todos en tiempo real</button>
   </div>
 
   <h3>Fotos en Ruta</h3>
@@ -95,15 +96,14 @@
   </table>
 </div>
 
-<!-- Firebase y jsPDF -->
+<!-- Firebase y herramientas externas -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<!-- SheetJS para generar archivos Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+<!-- Firebase config -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyBd25hLnwk72yO9E7ovKkB6Ba5RA0F_3aI",
@@ -118,34 +118,12 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   const storage = firebase.storage();
-
-  // Asegúrate de que initMap existe
-  function initMap() {}
-
-  // Ejemplo: arreglo de coordenadas (simulación)
-  let coordinates = []; // Este debe llenarse con lat/lng/address reales durante el seguimiento
-
-  function descargarRutaXLSX() {
-    if (coordinates.length === 0) {
-      alert("No hay coordenadas para exportar.");
-      return;
-    }
-
-    const worksheetData = coordinates.map(coord => ({
-      Latitud: coord.lat,
-      Longitud: coord.lng,
-      Dirección: coord.address || "Sin dirección"
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Ruta");
-
-    XLSX.writeFile(workbook, "ruta_reciclador.xlsx");
-  }
 </script>
 
+<!-- Script principal (tu lógica personalizada) -->
 <script src="script.js"></script>
+
+<!-- Google Maps API al final para evitar error de initMap -->
 <script async defer
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async">
 </script>
