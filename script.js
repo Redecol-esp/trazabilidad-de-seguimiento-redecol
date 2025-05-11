@@ -36,6 +36,7 @@ function iniciarSeguimiento() {
         return;
     }
 
+    const nombreReciclador = document.getElementById('nombreReciclador').value.trim() || "anonimo";
     seguimientoActivo = true;
     document.getElementById('iniciarSeguimiento').disabled = true;
     document.getElementById('detenerSeguimiento').disabled = false;
@@ -54,6 +55,9 @@ function iniciarSeguimiento() {
             }
 
             if (map) map.setCenter(nuevaUbicacion);
+
+            // Guardar en Firebase
+            enviarUbicacionAFirebase(nombreReciclador, nuevaUbicacion);
         },
         (err) => {
             console.error("Error al obtener la ubicación:", err);
@@ -215,43 +219,44 @@ function downloadFile(filename, contentType, content) {
     a.click();
 }
 
-// Seguimiento en vivo
+// GUARDAR en Firebase
+async function enviarUbicacionAFirebase(nombreReciclador, ubicacion) {
+    try {
+        await db.collection("rutas").doc(nombreReciclador).set({
+            ...ubicacion,
+            timestamp: new Date()
+        });
+        console.log("Ubicación guardada en Firebase:", ubicacion);
+    } catch (error) {
+        console.error("Error al guardar en Firebase:", error);
+    }
+}
+
+// LEER en vivo desde Firebase
 function verEnVivo() {
-    if (!navigator.geolocation) {
-        alert("Tu navegador no soporta geolocalización.");
+    const nombreReciclador = document.getElementById('nombreReciclador').value.trim();
+    if (!nombreReciclador) {
+        alert("Por favor ingresa el nombre o ID del reciclador para ver en vivo.");
         return;
     }
-
-    if (!map) {
-        alert("El mapa aún no ha sido inicializado.");
-        return;
-    }
-
-    const iconoVerde = {
-        url: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
-    };
 
     const marcadorLive = new google.maps.Marker({
         map: map,
         title: "Ubicación en Vivo",
-        icon: iconoVerde
+        icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
     });
 
-    navigator.geolocation.watchPosition(
-        (position) => {
-            const pos = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            };
+    db.collection("rutas").doc(nombreReciclador)
+      .onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            const pos = { lat: data.lat, lng: data.lng };
             marcadorLive.setPosition(pos);
             map.setCenter(pos);
-        },
-        (error) => {
-            console.error("Error de geolocalización en vivo:", error);
-            alert("No se pudo obtener ubicación en vivo.");
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-    );
+        } else {
+            console.warn("No hay datos en Firebase para este reciclador.");
+        }
+      }, (error) => {
+        console.error("Error leyendo de Firebase:", error);
+      });
 }
-
-
