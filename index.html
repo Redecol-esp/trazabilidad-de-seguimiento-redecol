@@ -113,13 +113,11 @@
   const storage = firebase.storage();
 </script>
 
-<!-- Tu script personalizado debe cargarse antes del mapa -->
+<!-- ✅ Cargar primero tu script personalizado -->
 <script src="script.js"></script>
 
-<!-- Google Maps API al final para evitar error initMap -->
+<!-- ✅ Luego el mapa para que encuentre initMap -->
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async"></script>
 
 </body>
 </html>
-
-
