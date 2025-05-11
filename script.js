@@ -132,110 +132,12 @@ document.addEventListener("DOMContentLoaded", () => {
     map.fitBounds(bounds);
   }
 
-  function mostrarTodasTrayectorias() {
-    mostrarTrayectoria("todos");
-  }
-
-  // Estado del servicio
-  function cambiarEstado(estado) {
-    alert(`Estado del reciclador cambiado a: ${estado}`);
-  }
-
-  // Funciones faltantes para evitar errores
-  function mostrarFotosEnMapa() {
-    alert("Función mostrarFotosEnMapa aún no implementada.");
-  }
-
-  function mostrarTodasFotos() {
-    alert("Función mostrarTodasFotos aún no implementada.");
-  }
-
-  function generarReportePDF() {
-    alert("Función generarReportePDF aún no implementada.");
-  }
-
-  // Cámara
-  function toggleCamera() {
-    if (photoStream) {
-      stopCamera();
-    } else {
-      startCamera();
-    }
-  }
-
-  function startCamera() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert('La cámara no es compatible con este navegador.');
-      return;
-    }
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        photoStream = stream;
-        cameraFeed.srcObject = stream;
-        cameraContainer.style.display = 'block';
-        takePhoto.onclick = takePicture;
-      })
-      .catch(error => {
-        console.error('Error al acceder a la cámara:', error);
-        alert('No se pudo acceder a la cámara.');
-      });
-  }
-
-  function stopCamera() {
-    if (photoStream) {
-      photoStream.getTracks().forEach(track => track.stop());
-      cameraFeed.srcObject = null;
-      cameraContainer.style.display = 'none';
-      photoStream = null;
-    }
-  }
-
-  function takePicture() {
-    const context = photoCanvas.getContext('2d');
-    photoCanvas.width = cameraFeed.videoWidth;
-    photoCanvas.height = cameraFeed.videoHeight;
-    context.drawImage(cameraFeed, 0, 0, cameraFeed.videoWidth, cameraFeed.videoHeight);
-
-    const imageDataURL = photoCanvas.toDataURL('image/png');
-    displayPhotoPreview(imageDataURL);
-  }
-
-  function displayPhotoPreview(imageDataURL) {
-    const img = document.createElement('img');
-    img.src = imageDataURL;
-    photoPreview.innerHTML = '';
-    photoPreview.appendChild(img);
-  }
-
-  // Exportar CSV
-  function descargarRutaCSV() {
-    if (!rutaReciclador.length) {
-      alert("No hay datos de ruta para descargar.");
-      return;
-    }
-
-    let csvContent = "Latitud,Longitud,Timestamp\n";
-    rutaReciclador.forEach(loc => {
-      csvContent += `${loc.lat},${loc.lng},${loc.timestamp}\n`;
-    });
-
-    downloadFile("ruta.csv", "text/csv;charset=utf-8;", csvContent);
-  }
-
-  function downloadFile(filename, contentType, content) {
-    const a = document.createElement('a');
-    const file = new Blob([content], { type: contentType });
-    a.href = URL.createObjectURL(file);
-    a.download = filename;
-    a.click();
-  }
-
-  // GUARDAR en Firebase
+  // Guardar en Firebase
   async function enviarUbicacionAFirebase(nombreReciclador, ubicacion) {
     try {
       await db.collection("rutas").doc(nombreReciclador).collection("ubicaciones").add({
-        ...ubicacion,
+        lat: ubicacion.lat,
+        lng: ubicacion.lng,
         timestamp: new Date()
       });
       console.log("Ubicación guardada en Firebase:", ubicacion);
@@ -244,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // LEER en vivo desde Firebase
+  // Leer en vivo desde Firebase
   function verEnVivo() {
     const nombreReciclador = document.getElementById('nombreReciclador').value.trim();
     if (!nombreReciclador) {
@@ -280,6 +182,5 @@ document.addEventListener("DOMContentLoaded", () => {
   window.toggleGrabarRecorrido = toggleGrabarRecorrido;
   window.cargarRuta = cargarRuta;
   window.mostrarTrayectoria = mostrarTrayectoria;
-  window.mostrar
-::contentReference[oaicite:20]{index=20}
- 
+  window.verEnVivo = verEnVivo;
+});
