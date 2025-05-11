@@ -1,3 +1,19 @@
+// Inicialización de Firebase
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_STORAGE_BUCKET",
+  messagingSenderId: "TU_MESSAGING_SENDER_ID",
+  appId: "TU_APP_ID",
+  measurementId: "TU_MEASUREMENT_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// Variables globales
 let map;
 let marcadorReciclador;
 let rutaReciclador = [];
@@ -7,33 +23,29 @@ let watchID;
 let grabandoRecorrido = false;
 let rutaGrabada = [];
 
-// Elementos de cámara
-let cameraContainer = document.getElementById('cameraContainer');
-let cameraFeed = document.getElementById('cameraFeed');
-let takePhoto = document.getElementById('takePhoto');
-let photoCanvas = document.getElementById('photoCanvas');
-let photoPreview = document.getElementById('photoPreview');
-let photoStream = null;
+// Elementos del DOM
+document.addEventListener("DOMContentLoaded", () => {
+  const cameraContainer = document.getElementById('cameraContainer');
+  const cameraFeed = document.getElementById('cameraFeed');
+  const takePhoto = document.getElementById('takePhoto');
+  const photoCanvas = document.getElementById('photoCanvas');
+  const photoPreview = document.getElementById('photoPreview');
+  let photoStream = null;
 
-// Colecciones de Firebase
-const RUTAS_COLLECTION = 'rutas';
-const USUARIOS_COLLECTION = 'usuarios';
-const FOTOS_COLLECTION = 'fotos';
-
-// Inicialización del mapa
-function initMap() {
+  // Inicialización del mapa
+  function initMap() {
     const ubicacionInicial = { lat: 7.0652, lng: -73.8514 }; // Barrancabermeja
     map = new google.maps.Map(document.getElementById("map"), {
-        center: ubicacionInicial,
-        zoom: 13,
+      center: ubicacionInicial,
+      zoom: 13,
     });
-}
+  }
 
-// Seguimiento GPS
-function iniciarSeguimiento() {
+  // Seguimiento GPS
+  function iniciarSeguimiento() {
     if (!navigator.geolocation) {
-        alert("Tu navegador no soporta geolocalización.");
-        return;
+      alert("Tu navegador no soporta geolocalización.");
+      return;
     }
 
     const nombreReciclador = document.getElementById('nombreReciclador').value.trim() || "anonimo";
@@ -42,144 +54,144 @@ function iniciarSeguimiento() {
     document.getElementById('detenerSeguimiento').disabled = false;
 
     watchID = navigator.geolocation.watchPosition(
-        (pos) => {
-            const nuevaUbicacion = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                timestamp: pos.timestamp
-            };
+      (pos) => {
+        const nuevaUbicacion = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          timestamp: pos.timestamp
+        };
 
-            rutaReciclador.push(nuevaUbicacion);
-            if (grabandoRecorrido) {
-                rutaGrabada.push(nuevaUbicacion);
-            }
+        rutaReciclador.push(nuevaUbicacion);
+        if (grabandoRecorrido) {
+          rutaGrabada.push(nuevaUbicacion);
+        }
 
-            if (map) map.setCenter(nuevaUbicacion);
+        if (map) map.setCenter(nuevaUbicacion);
 
-            // Guardar en Firebase
-            enviarUbicacionAFirebase(nombreReciclador, nuevaUbicacion);
-        },
-        (err) => {
-            console.error("Error al obtener la ubicación:", err);
-            alert("No se pudo obtener la ubicación.");
-            detenerSeguimiento();
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+        // Guardar en Firebase
+        enviarUbicacionAFirebase(nombreReciclador, nuevaUbicacion);
+      },
+      (err) => {
+        console.error("Error al obtener la ubicación:", err);
+        alert("No se pudo obtener la ubicación.");
+        detenerSeguimiento();
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
-}
+  }
 
-function detenerSeguimiento() {
+  function detenerSeguimiento() {
     if (watchID) {
-        navigator.geolocation.clearWatch(watchID);
-        seguimientoActivo = false;
-        document.getElementById('iniciarSeguimiento').disabled = false;
-        document.getElementById('detenerSeguimiento').disabled = true;
-        alert("Seguimiento detenido.");
+      navigator.geolocation.clearWatch(watchID);
+      seguimientoActivo = false;
+      document.getElementById('iniciarSeguimiento').disabled = false;
+      document.getElementById('detenerSeguimiento').disabled = true;
+      alert("Seguimiento detenido.");
     }
-}
+  }
 
-function toggleGrabarRecorrido() {
+  function toggleGrabarRecorrido() {
     grabandoRecorrido = !grabandoRecorrido;
     document.getElementById('grabarRecorrido').textContent = grabandoRecorrido ? '■ Detener Grabación' : '⏺️ Grabar Recorrido';
     if (!grabandoRecorrido) {
-        console.log("Recorrido Grabado:", rutaGrabada);
-        rutaGrabada = [];
+      console.log("Recorrido Grabado:", rutaGrabada);
+      rutaGrabada = [];
     }
-}
+  }
 
-// Visualización de rutas
-function cargarRuta() {
+  // Visualización de rutas
+  function cargarRuta() {
     if (!rutaReciclador.length) {
-        alert("No hay ruta registrada aún.");
-        return;
+      alert("No hay ruta registrada aún.");
+      return;
     }
 
     const bounds = new google.maps.LatLngBounds();
     rutaReciclador.forEach(p => bounds.extend(new google.maps.LatLng(p.lat, p.lng)));
     map.fitBounds(bounds);
-}
+  }
 
-function mostrarTrayectoria(nombre) {
+  function mostrarTrayectoria(nombre) {
     if (!rutaReciclador.length) {
-        alert("No hay trayectoria registrada para este reciclador.");
-        return;
+      alert("No hay trayectoria registrada para este reciclador.");
+      return;
     }
 
     const path = rutaReciclador.map(p => new google.maps.LatLng(p.lat, p.lng));
     const polilinea = new google.maps.Polyline({
-        path: path,
-        geodesic: true,
-        strokeColor: "#f44336",
-        strokeOpacity: 1.0,
-        strokeWeight: 3,
-        map: map,
+      path: path,
+      geodesic: true,
+      strokeColor: "#f44336",
+      strokeOpacity: 1.0,
+      strokeWeight: 3,
+      map: map,
     });
 
     const bounds = new google.maps.LatLngBounds();
     path.forEach(p => bounds.extend(p));
     map.fitBounds(bounds);
-}
+  }
 
-function mostrarTodasTrayectorias() {
+  function mostrarTodasTrayectorias() {
     mostrarTrayectoria("todos");
-}
+  }
 
-// Estado del servicio
-function cambiarEstado(estado) {
+  // Estado del servicio
+  function cambiarEstado(estado) {
     alert(`Estado del reciclador cambiado a: ${estado}`);
-}
+  }
 
-// Funciones faltantes para evitar errores
-function mostrarFotosEnMapa() {
+  // Funciones faltantes para evitar errores
+  function mostrarFotosEnMapa() {
     alert("Función mostrarFotosEnMapa aún no implementada.");
-}
+  }
 
-function mostrarTodasFotos() {
+  function mostrarTodasFotos() {
     alert("Función mostrarTodasFotos aún no implementada.");
-}
+  }
 
-function generarReportePDF() {
+  function generarReportePDF() {
     alert("Función generarReportePDF aún no implementada.");
-}
+  }
 
-// Cámara
-function toggleCamera() {
+  // Cámara
+  function toggleCamera() {
     if (photoStream) {
-        stopCamera();
+      stopCamera();
     } else {
-        startCamera();
+      startCamera();
     }
-}
+  }
 
-function startCamera() {
+  function startCamera() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('La cámara no es compatible con este navegador.');
-        return;
+      alert('La cámara no es compatible con este navegador.');
+      return;
     }
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
-            photoStream = stream;
-            cameraFeed.srcObject = stream;
-            cameraContainer.style.display = 'block';
-            takePhoto.onclick = takePicture;
-        })
-        .catch(error => {
-            console.error('Error al acceder a la cámara:', error);
-            alert('No se pudo acceder a la cámara.');
-        });
-}
+      .then(stream => {
+        photoStream = stream;
+        cameraFeed.srcObject = stream;
+        cameraContainer.style.display = 'block';
+        takePhoto.onclick = takePicture;
+      })
+      .catch(error => {
+        console.error('Error al acceder a la cámara:', error);
+        alert('No se pudo acceder a la cámara.');
+      });
+  }
 
-function stopCamera() {
+  function stopCamera() {
     if (photoStream) {
-        photoStream.getTracks().forEach(track => track.stop());
-        cameraFeed.srcObject = null;
-        cameraContainer.style.display = 'none';
-        photoStream = null;
+      photoStream.getTracks().forEach(track => track.stop());
+      cameraFeed.srcObject = null;
+      cameraContainer.style.display = 'none';
+      photoStream = null;
     }
-}
+  }
 
-function takePicture() {
+  function takePicture() {
     const context = photoCanvas.getContext('2d');
     photoCanvas.width = cameraFeed.videoWidth;
     photoCanvas.height = cameraFeed.videoHeight;
@@ -187,76 +199,87 @@ function takePicture() {
 
     const imageDataURL = photoCanvas.toDataURL('image/png');
     displayPhotoPreview(imageDataURL);
-}
+  }
 
-function displayPhotoPreview(imageDataURL) {
+  function displayPhotoPreview(imageDataURL) {
     const img = document.createElement('img');
     img.src = imageDataURL;
     photoPreview.innerHTML = '';
     photoPreview.appendChild(img);
-}
+  }
 
-// Exportar CSV
-function descargarRutaCSV() {
+  // Exportar CSV
+  function descargarRutaCSV() {
     if (!rutaReciclador.length) {
-        alert("No hay datos de ruta para descargar.");
-        return;
+      alert("No hay datos de ruta para descargar.");
+      return;
     }
 
     let csvContent = "Latitud,Longitud,Timestamp\n";
     rutaReciclador.forEach(loc => {
-        csvContent += `${loc.lat},${loc.lng},${loc.timestamp}\n`;
+      csvContent += `${loc.lat},${loc.lng},${loc.timestamp}\n`;
     });
 
     downloadFile("ruta.csv", "text/csv;charset=utf-8;", csvContent);
-}
+  }
 
-function downloadFile(filename, contentType, content) {
+  function downloadFile(filename, contentType, content) {
     const a = document.createElement('a');
     const file = new Blob([content], { type: contentType });
     a.href = URL.createObjectURL(file);
     a.download = filename;
     a.click();
-}
+  }
 
-// GUARDAR en Firebase
-async function enviarUbicacionAFirebase(nombreReciclador, ubicacion) {
+  // GUARDAR en Firebase
+  async function enviarUbicacionAFirebase(nombreReciclador, ubicacion) {
     try {
-        await db.collection("rutas").doc(nombreReciclador).set({
-            ...ubicacion,
-            timestamp: new Date()
-        });
-        console.log("Ubicación guardada en Firebase:", ubicacion);
+      await db.collection("rutas").doc(nombreReciclador).collection("ubicaciones").add({
+        ...ubicacion,
+        timestamp: new Date()
+      });
+      console.log("Ubicación guardada en Firebase:", ubicacion);
     } catch (error) {
-        console.error("Error al guardar en Firebase:", error);
+      console.error("Error al guardar en Firebase:", error);
     }
-}
+  }
 
-// LEER en vivo desde Firebase
-function verEnVivo() {
+  // LEER en vivo desde Firebase
+  function verEnVivo() {
     const nombreReciclador = document.getElementById('nombreReciclador').value.trim();
     if (!nombreReciclador) {
-        alert("Por favor ingresa el nombre o ID del reciclador para ver en vivo.");
-        return;
+      alert("Por favor ingresa el nombre o ID del reciclador para ver en vivo.");
+      return;
     }
 
     const marcadorLive = new google.maps.Marker({
-        map: map,
-        title: "Ubicación en Vivo",
-        icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+      map: map,
+      title: "Ubicación en Vivo",
+      icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
     });
 
-    db.collection("rutas").doc(nombreReciclador)
-      .onSnapshot((doc) => {
-        if (doc.exists) {
-            const data = doc.data();
-            const pos = { lat: data.lat, lng: data.lng };
-            marcadorLive.setPosition(pos);
-            map.setCenter(pos);
-        } else {
-            console.warn("No hay datos en Firebase para este reciclador.");
-        }
+    db.collection("rutas").doc(nombreReciclador).collection("ubicaciones")
+      .orderBy("timestamp", "desc")
+      .limit(1)
+      .onSnapshot((snapshot) => {
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const pos = { lat: data.lat, lng: data.lng };
+          marcadorLive.setPosition(pos);
+          map.setCenter(pos);
+        });
       }, (error) => {
         console.error("Error leyendo de Firebase:", error);
       });
-}
+  }
+
+  // Exponer funciones al ámbito global
+  window.initMap = initMap;
+  window.iniciarSeguimiento = iniciarSeguimiento;
+  window.detenerSeguimiento = detenerSeguimiento;
+  window.toggleGrabarRecorrido = toggleGrabarRecorrido;
+  window.cargarRuta = cargarRuta;
+  window.mostrarTrayectoria = mostrarTrayectoria;
+  window.mostrar
+::contentReference[oaicite:20]{index=20}
+ 
