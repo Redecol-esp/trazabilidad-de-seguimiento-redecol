@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Seguimiento de Recicladores - REDECOL</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="https://www.google.com/favicon.ico">
+  <link rel="icon" href="LOGO SIN FONDO.png" type="image/png">
 </head>
 <body>
 
@@ -32,59 +32,63 @@
   <h2>Control de Seguimiento</h2>
   <input type="text" id="nombreReciclador" placeholder="Nombre o ID del reciclador">
   <div class="buttons">
-    <button id="iniciarSeguimiento" onclick="iniciarSeguimiento()">📍 Iniciar seguimiento</button>
-    <button id="detenerSeguimiento" onclick="detenerSeguimiento()" disabled>⏹️ Detener seguimiento</button>
-    <button id="grabarRecorrido" onclick="toggleGrabarRecorrido()">⏺️ Grabar Recorrido</button>
+    <button id="iniciarSeguimiento" type="button">📍 Iniciar seguimiento</button>
+    <button id="detenerSeguimiento" type="button" disabled>⏹️ Detener seguimiento</button>
+    <button id="grabarRecorrido" type="button">⏺️ Grabar Recorrido</button>
   </div>
 
   <h3>Estado del Servicio:</h3>
   <div class="buttons">
-    <button onclick="cambiarEstado('Disponible')">Disponible</button>
-    <button onclick="cambiarEstado('En Ruta')">En Ruta</button>
-    <button onclick="cambiarEstado('Finalizado')">Finalizado</button>
+    <button type="button" onclick="cambiarEstado('Disponible')">Disponible</button>
+    <button type="button" onclick="cambiarEstado('En Ruta')">En Ruta</button>
+    <button type="button" onclick="cambiarEstado('Finalizado')">Finalizado</button>
   </div>
 
   <h3>Visualización de Rutas:</h3>
   <div class="buttons">
-    <button onclick="cargarRuta()">Ver mi ruta</button>
-    <button onclick="mostrarTrayectoria(document.getElementById('nombreReciclador').value)">Ver trayectoria individual</button>
-    <button onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
+    <button type="button" onclick="cargarRuta()">Ver mi ruta</button>
+    <button type="button" onclick="mostrarTrayectoria(document.getElementById('nombreReciclador').value)">Ver trayectoria individual</button>
+    <button type="button" onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
   </div>
 
   <h3>Seguimiento en Vivo</h3>
   <div class="buttons">
-    <button onclick="verEnVivo()">📡 Ver en vivo</button>
+    <button type="button" onclick="verEnVivo()">📡 Ver en vivo</button>
   </div>
 
   <h3>Fotos en Ruta</h3>
   <div class="buttons">
-    <button onclick="toggleCamera()">📷 Activar/Desactivar Cámara</button>
-    <button onclick="mostrarFotosEnMapa()">🖼️ Ver Fotos en el Mapa</button>
-    <button onclick="mostrarTodasFotos()">🌍 Ver todas las fotos</button>
-    <button onclick="generarReportePDF()">📄 Generar Reporte en PDF</button>
+    <button type="button" onclick="toggleCamera()">📷 Activar/Desactivar Cámara</button>
+    <button type="button" onclick="mostrarFotosEnMapa()">🖼️ Ver Fotos en el Mapa</button>
+    <button type="button" onclick="mostrarTodasFotos()">🌍 Ver todas las fotos</button>
+    <button type="button" onclick="generarReportePDF()">📄 Generar Reporte en PDF</button>
   </div>
 
   <div id="cameraContainer" style="display: none;">
     <video id="cameraFeed" autoplay></video>
-    <button id="takePhoto" onclick="takePicture()">Tomar Foto</button>
+    <button id="takePhoto" type="button" onclick="takePicture()">Tomar Foto</button>
     <canvas id="photoCanvas" style="display: none;"></canvas>
     <div id="photoPreview"></div>
   </div>
 
-  <div id="map"></div>
+  <div id="map" style="height: 400px; width: 100%;"></div>
 
   <h3>Descargar Datos:</h3>
   <div class="buttons">
-    <button onclick="descargarRutaCSV()">Descargar Ruta (CSV)</button>
-    <button onclick="descargarTrayectoriaImagen()">Descargar Trayectoria (Imagen)</button>
+    <button type="button" onclick="descargarRutaCSV()">Descargar Ruta (CSV)</button>
+    <button type="button" onclick="descargarTrayectoriaImagen()">Descargar Trayectoria (Imagen)</button>
   </div>
 
   <h2>Usuarios Registrados</h2>
   <table id="tablaUsuarios">
     <thead>
       <tr>
-        <th>Nombre</th><th>NIT/Cédula</th><th>Dirección</th>
-        <th>Sector</th><th>Teléfono</th><th>Correo</th>
+        <th>Nombre</th>
+        <th>NIT/Cédula</th>
+        <th>Dirección</th>
+        <th>Sector</th>
+        <th>Teléfono</th>
+        <th>Correo</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -111,13 +115,15 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   const storage = firebase.storage();
+
+  // Asegúrate de que initMap existe para evitar error si el script se carga antes
+  function initMap() {}
 </script>
 
-<!-- ✅ Cargar primero tu script personalizado -->
 <script src="script.js"></script>
-
-<!-- ✅ Luego el mapa para que encuentre initMap -->
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async"></script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBEO4kGVuRJbZ9pf4Ruf-V21ZuPLBKl6z0&callback=initMap&loading=async">
+</script>
 
 </body>
 </html>
