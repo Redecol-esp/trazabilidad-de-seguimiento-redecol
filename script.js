@@ -1,5 +1,3 @@
-// script.js COMPLETO y FUNCIONAL
-
 // --- Configurar Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyBd25hLnwk72yO9E7ovKkB6Ba5RA0F_3aI",
@@ -19,6 +17,7 @@ let rutaReciclador = [];
 let grabandoRecorrido = false;
 let photoStream = null;
 
+// --- Inicializar Mapa ---
 function initMap() {
   const centro = { lat: 7.0652, lng: -73.8514 };
   map = new google.maps.Map(document.getElementById("map"), {
@@ -26,19 +25,30 @@ function initMap() {
     zoom: 14,
   });
   trayectoriaPolyline = new google.maps.Polyline({
-    path: [], geodesic: true, strokeColor: "#2196f3",
-    strokeOpacity: 1.0, strokeWeight: 4, map: map,
+    path: [],
+    geodesic: true,
+    strokeColor: "#2196f3",
+    strokeOpacity: 1.0,
+    strokeWeight: 4,
+    map: map,
   });
 }
 window.initMap = initMap;
 
+// --- Iniciar seguimiento ---
 function iniciarSeguimiento() {
   const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
   if (!navigator.geolocation) return alert("Geolocalización no disponible.");
+
   document.getElementById('iniciarSeguimiento').disabled = true;
   document.getElementById('detenerSeguimiento').disabled = false;
+
   watchID = navigator.geolocation.watchPosition(async (pos) => {
-    const ubicacion = { lat: pos.coords.latitude, lng: pos.coords.longitude, timestamp: new Date() };
+    const ubicacion = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      timestamp: new Date()
+    };
     rutaReciclador.push(ubicacion);
     trayectoriaPolyline.getPath().push(new google.maps.LatLng(ubicacion.lat, ubicacion.lng));
     map.setCenter(ubicacion);
@@ -94,10 +104,17 @@ window.mostrarTrayectoria = mostrarTrayectoria;
 window.mostrarTodasTrayectorias = () => alert("Función no implementada aún.");
 window.cambiarEstado = estado => alert(`Estado cambiado a: ${estado}`);
 
+// --- Ver en vivo ---
 function verEnVivo() {
   const nombre = document.getElementById("nombreReciclador").value.trim();
   if (!nombre) return alert("Ingrese nombre del reciclador");
-  const marker = new google.maps.Marker({ map, title: nombre, icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png" });
+
+  const marker = new google.maps.Marker({
+    map,
+    title: nombre,
+    icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
+  });
+
   db.collection("rutas").doc(nombre).collection("ubicaciones")
     .orderBy("timestamp", "desc").limit(1).onSnapshot(snap => {
       snap.forEach(doc => {
@@ -110,6 +127,7 @@ function verEnVivo() {
 }
 window.verEnVivo = verEnVivo;
 
+// --- Cámara ---
 function toggleCamera() {
   if (photoStream) return stopCamera();
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
@@ -130,19 +148,25 @@ function takePicture() {
   const video = document.getElementById("cameraFeed");
   const canvas = document.getElementById("photoCanvas");
   const context = canvas.getContext("2d");
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   context.drawImage(video, 0, 0);
   const imgData = canvas.toDataURL("image/png");
+
   const img = new Image();
   img.src = imgData;
   document.getElementById("photoPreview").innerHTML = "";
   document.getElementById("photoPreview").appendChild(img);
-  // Subir a Firebase
+
   const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
   const nombreArchivo = `${nombre}_${Date.now()}.png`;
   storage.ref("fotos/" + nombreArchivo).putString(imgData, 'data_url').then(() => {
-    db.collection("fotos").add({ nombre, url: "fotos/" + nombreArchivo, timestamp: new Date() });
+    db.collection("fotos").add({
+      nombre,
+      url: "fotos/" + nombreArchivo,
+      timestamp: new Date()
+    });
     alert("Foto guardada correctamente");
   });
 }
@@ -169,7 +193,7 @@ function mostrarFotosEnMapa() {
       storage.ref(d.url).getDownloadURL().then(url => {
         new google.maps.Marker({
           map,
-          position: { lat: 7.0652, lng: -73.8514 }, // Ubicación simulada
+          position: { lat: 7.0652, lng: -73.8514 }, // Coordenada simulada
           icon: url,
           title: d.nombre
         });
@@ -179,14 +203,30 @@ function mostrarFotosEnMapa() {
 }
 window.mostrarFotosEnMapa = mostrarFotosEnMapa;
 
+// --- Generar reporte PDF ---
 function generarReportePDF() {
-  import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(jsPDF => {
-    const { jsPDF: PDF } = jsPDF;
-    const doc = new PDF();
-    doc.text("Reporte de Ruta REDECOL", 10, 10);
-    doc.text("Reciclador: " + (document.getElementById("nombreReciclador").value || "anonimo"), 10, 20);
-    doc.text("Puntos registrados: " + rutaReciclador.length, 10, 30);
-    doc.save("reporte.pdf");
+  import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(jsPDFModule => {
+    const { jsPDF } = jsPDFModule;
+    const doc = new jsPDF();
+    const nombre = document.getElementById("nombreReciclador").value || "anonimo";
+
+    doc.setFontSize(16);
+    doc.text("Reporte de Ruta - REDECOL E.S.P.", 20, 20);
+    doc.setFontSize(12);
+    doc.text("Reciclador: " + nombre, 20, 30);
+    doc.text("Puntos registrados: " + rutaReciclador.length, 20, 40);
+
+    let y = 60;
+    rutaReciclador.forEach((p, i) => {
+      doc.text(`${i + 1}. ${p.lat}, ${p.lng} - ${new Date(p.timestamp).toLocaleString()}`, 20, y);
+      y += 8;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    doc.save("reporte_reciclador.pdf");
   });
 }
 window.generarReportePDF = generarReportePDF;
@@ -216,4 +256,3 @@ function descargarTrayectoriaImagen() {
   }, 1000);
 }
 window.descargarTrayectoriaImagen = descargarTrayectoriaImagen;
-
