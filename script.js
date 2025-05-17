@@ -77,13 +77,47 @@ function toggleGrabarRecorrido() {
 }
 window.toggleGrabarRecorrido = toggleGrabarRecorrido;
 
-function cargarRuta() {
-  if (!rutaReciclador.length) return alert("No hay ruta aún.");
-  const bounds = new google.maps.LatLngBounds();
-  rutaReciclador.forEach(p => bounds.extend(new google.maps.LatLng(p.lat, p.lng)));
-  map.fitBounds(bounds);
+function cargarRutaDesdeCSV() {
+  const input = document.getElementById('inputArchivoCSV');
+  if (!input.files.length) return alert("Selecciona un archivo CSV");
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const csv = e.target.result;
+    const lines = csv.split('\n').filter(l => l.trim().length > 0);
+    const path = [];
+
+    // Salta cabecera
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(',');
+      if (parts.length < 2) continue;
+      const lat = parseFloat(parts[0]);
+      const lng = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        path.push({ lat, lng });
+      }
+    }
+
+    // Limpia rutas anteriores
+    if (window.csvPolyline) window.csvPolyline.setMap(null);
+
+    window.csvPolyline = new google.maps.Polyline({
+      path,
+      geodesic: true,
+      strokeColor: "#ff9800",
+      strokeOpacity: 1.0,
+      strokeWeight: 4,
+      map: map,
+    });
+
+    if (path.length) {
+      const bounds = new google.maps.LatLngBounds();
+      path.forEach(p => bounds.extend(p));
+      map.fitBounds(bounds);
+    }
+  };
+  reader.readAsText(input.files[0]);
 }
-window.cargarRuta = cargarRuta;
 
 function mostrarTrayectoria(nombre) {
   db.collection("rutas").doc(nombre).collection("ubicaciones")
