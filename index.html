@@ -17,6 +17,14 @@
 </header>
 
 <div class="container">
+  <div style="margin-bottom: 1rem;">
+    <label for="rol">Selecciona tu rol: </label>
+    <select id="rol" onchange="ajustarVistaPorRol()">
+      <option value="reciclador">Reciclador</option>
+      <option value="admin">Administrador</option>
+    </select>
+  </div>
+
   <h2>Registro de Usuario</h2>
   <form id="registroForm">
     <input type="text" id="nombre" placeholder="Nombre o Razón Social" required>
@@ -49,7 +57,7 @@
   <div class="buttons">
     <button type="button" onclick="cargarRuta()">Ver mi ruta</button>
     <button type="button" onclick="mostrarTrayectoria(document.getElementById('nombreReciclador').value)">Ver trayectoria individual</button>
-    <button type="button" onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
+    <button type="button" id="btnTodasTrayectorias" onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
   </div>
 
   <h3>Seguimiento en Vivo</h3>
@@ -58,9 +66,8 @@
   </div>
   
   <h3>Cargar ruta de reciclador (CSV):</h3>
-<input type="file" id="inputArchivoCSV" accept=".csv">
-<button type="button" onclick="cargarRutaDesdeCSV()">📤 Cargar y mostrar ruta</button>
-    </div>
+  <input type="file" id="inputArchivoCSV" accept=".csv">
+  <button type="button" onclick="cargarRutaDesdeCSV()">📤 Cargar y mostrar ruta</button>
   
   <h3>Fotos en Ruta</h3>
   <div class="buttons">
@@ -75,6 +82,7 @@
     <video id="cameraFeed" autoplay></video>
     <canvas id="photoCanvas" style="display: none;"></canvas>
     <div id="photoPreview"></div>
+    <div id="whatsappBtnContainer"></div>
   </div>
 
   <div id="map" style="height: 400px; width: 100%; margin-top: 20px;"></div>
