@@ -35,6 +35,21 @@ function initMap() {
 }
 window.initMap = initMap;
 
+// --- Control de roles ---
+function ajustarVistaPorRol() {
+  const rol = document.getElementById('rol').value;
+  // Solo el admin puede ver todas las trayectorias
+  const btnTodas = document.getElementById('btnTodasTrayectorias');
+  if (btnTodas) btnTodas.style.display = rol === "admin" ? "inline-block" : "none";
+}
+window.ajustarVistaPorRol = ajustarVistaPorRol;
+
+// Al cargar la página, ajustar la vista por rol
+window.onload = function() {
+  ajustarVistaPorRol();
+  if (window.initMap) initMap();
+};
+
 // --- Iniciar seguimiento ---
 function iniciarSeguimiento() {
   const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
@@ -192,6 +207,14 @@ function takePicture() {
   img.src = imgData;
   document.getElementById("photoPreview").innerHTML = "";
   document.getElementById("photoPreview").appendChild(img);
+
+  // Mostrar botón para WhatsApp
+  const whatsappContainer = document.getElementById("whatsappBtnContainer");
+  whatsappContainer.innerHTML = `
+    <a href="https://wa.me/573123387813?text=Hola,%20adjunto%20foto%20de%20la%20ruta%20REDECOL." target="_blank">
+      <button style="background:#25d366;color:white;">Enviar foto por WhatsApp</button>
+    </a>
+  `;
 
   const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
   const nombreArchivo = `${nombre}_${Date.now()}.png`;
