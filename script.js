@@ -1,3 +1,4 @@
+
 // --- Configurar Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyBd25hLnwk72yO9E7ovKkB6Ba5RA0F_3aI",
@@ -15,7 +16,12 @@ const storage = firebase.storage();
 let map, marcadorReciclador, trayectoriaPolyline, watchID;
 let rutaReciclador = [];
 let grabandoRecorrido = false;
+let grabacionActual = [];
 let photoStream = null;
+let polylinesCSV = [];
+let marcadoresFotos = [];
+let usuarioActual = null;
+let estadoActual = "Disponible";
 
 // --- Inicializar Mapa ---
 function initMap() {
@@ -48,12 +54,50 @@ window.ajustarVistaPorRol = ajustarVistaPorRol;
 window.onload = function() {
   ajustarVistaPorRol();
   if (window.initMap) initMap();
+  cargarUsuarios();
+  mostrarEstado();
 };
 
-// --- Iniciar seguimiento ---
+// --- Registro de Usuarios ---
+document.getElementById("registroForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const data = {
+    nombre: document.getElementById("nombre").value.trim(),
+    nit: document.getElementById("nit").value.trim(),
+    direccion: document.getElementById("direccion").value.trim(),
+    sector: document.getElementById("sector").value.trim(),
+    telefono: document.getElementById("telefono").value.trim(),
+    correo: document.getElementById("correo").value.trim()
+  };
+  db.collection("usuarios").add(data).then(() => {
+    alert("Usuario registrado correctamente");
+    cargarUsuarios();
+    this.reset();
+  });
+});
+
+function cargarUsuarios() {
+  db.collection("usuarios").get().then(snapshot => {
+    const tbody = document.querySelector("#tablaUsuarios tbody");
+    tbody.innerHTML = "";
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${d.nombre}</td><td>${d.nit}</td><td>${d.direccion}</td><td>${d.sector}</td><td>${d.telefono}</td><td>${d.correo}</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// --- Control de Seguimiento ---
 function iniciarSeguimiento() {
   const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
+  usuarioActual = nombre;
   if (!navigator.geolocation) return alert("Geolocalización no disponible.");
+
+  rutaReciclador = [];
+  grabacionActual = [];
+  trayectoriaPolyline.setPath([]);
 
   document.getElementById('iniciarSeguimiento').disabled = true;
   document.getElementById('detenerSeguimiento').disabled = false;
@@ -62,9 +106,11 @@ function iniciarSeguimiento() {
     const ubicacion = {
       lat: pos.coords.latitude,
       lng: pos.coords.longitude,
-      timestamp: new Date()
+      timestamp: new Date(),
+      altitud: pos.coords.altitude || 0
     };
     rutaReciclador.push(ubicacion);
+    if (grabandoRecorrido) grabacionActual.push(ubicacion);
     trayectoriaPolyline.getPath().push(new google.maps.LatLng(ubicacion.lat, ubicacion.lng));
     map.setCenter(ubicacion);
     await db.collection("rutas").doc(nombre).collection("ubicaciones").add(ubicacion);
@@ -82,59 +128,67 @@ function detenerSeguimiento() {
     document.getElementById('iniciarSeguimiento').disabled = false;
     document.getElementById('detenerSeguimiento').disabled = true;
     alert("Seguimiento detenido.");
+    if (grabandoRecorrido && grabacionActual.length > 0) {
+      guardarGrabacion();
+    }
   }
 }
 window.detenerSeguimiento = detenerSeguimiento;
 
+// --- GRABAR RECORRIDO ---
 function toggleGrabarRecorrido() {
   grabandoRecorrido = !grabandoRecorrido;
   document.getElementById("grabarRecorrido").textContent = grabandoRecorrido ? "■ Detener Grabación" : "⏺️ Grabar Recorrido";
+  if (!grabandoRecorrido && grabacionActual.length > 0) {
+    guardarGrabacion();
+  }
+  if (grabandoRecorrido) {
+    grabacionActual = [];
+  }
+}
+
+function guardarGrabacion() {
+  const nombre = usuarioActual || document.getElementById("nombreReciclador").value.trim() || "anonimo";
+  if (grabacionActual.length === 0) return;
+  const meta = {
+    nombre,
+    fecha: new Date(),
+    puntos: grabacionActual
+  };
+  db.collection("recorridosGrabados").add(meta).then(() => {
+    alert("Grabación de recorrido guardada correctamente.");
+    grabacionActual = [];
+  });
 }
 window.toggleGrabarRecorrido = toggleGrabarRecorrido;
 
-function cargarRutaDesdeCSV() {
-  const input = document.getElementById('inputArchivoCSV');
-  if (!input.files.length) return alert("Selecciona un archivo CSV");
+// --- ESTADO DEL SERVICIO ---
+function cambiarEstado(estado) {
+  estadoActual = estado;
+  mostrarEstado();
+  const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
+  db.collection("estados").doc(nombre).set({
+    estado,
+    timestamp: new Date()
+  });
+}
+function mostrarEstado() {
+  document.getElementById('estadoActual').textContent = `Estado actual: ${estadoActual}`;
+}
+window.cambiarEstado = cambiarEstado;
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const csv = e.target.result;
-    const lines = csv.split('\n').filter(l => l.trim().length > 0);
-    const path = [];
-
-    // Salta cabecera
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(',');
-      if (parts.length < 2) continue;
-      const lat = parseFloat(parts[0]);
-      const lng = parseFloat(parts[1]);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        path.push({ lat, lng });
-      }
-    }
-
-    // Limpia rutas anteriores
-    if (window.csvPolyline) window.csvPolyline.setMap(null);
-
-    window.csvPolyline = new google.maps.Polyline({
-      path,
-      geodesic: true,
-      strokeColor: "#ff9800",
-      strokeOpacity: 1.0,
-      strokeWeight: 4,
-      map: map,
-    });
-
-    if (path.length) {
-      const bounds = new google.maps.LatLngBounds();
-      path.forEach(p => bounds.extend(p));
-      map.fitBounds(bounds);
-    }
-  };
-  reader.readAsText(input.files[0]);
+// --- VISUALIZACIÓN DE RUTAS ---
+function verMiRuta() {
+  const nombre = usuarioActual || document.getElementById("nombreReciclador").value.trim();
+  if (!nombre) return alert("Debe ingresar su nombre o ID.");
+  mostrarTrayectoria(nombre);
 }
 
 function mostrarTrayectoria(nombre) {
+  if (!nombre) {
+    alert("Ingrese el nombre o ID del reciclador.");
+    return;
+  }
   db.collection("rutas").doc(nombre).collection("ubicaciones")
     .orderBy("timestamp").get().then(snapshot => {
       const path = [];
@@ -142,23 +196,105 @@ function mostrarTrayectoria(nombre) {
         const d = doc.data();
         path.push(new google.maps.LatLng(d.lat, d.lng));
       });
-      const poly = new google.maps.Polyline({ path, strokeColor: "#f44336", strokeOpacity: 1, strokeWeight: 4, map });
+      if (path.length === 0) {
+        alert("No hay datos de trayectoria para este reciclador.");
+        return;
+      }
+      trayectoriaPolyline.setPath(path);
       const bounds = new google.maps.LatLngBounds();
       path.forEach(p => bounds.extend(p));
       map.fitBounds(bounds);
     });
 }
 window.mostrarTrayectoria = mostrarTrayectoria;
+window.verMiRuta = verMiRuta;
 
-window.mostrarTodasTrayectorias = () => alert("Función no implementada aún.");
-window.cambiarEstado = estado => alert(`Estado cambiado a: ${estado}`);
+// --- VER TODAS LAS TRAYECTORIAS (ADMIN) ---
+function mostrarTodasTrayectorias() {
+  // Limpia trayectorias anteriores
+  map && map.data && map.data.forEach((f) => map.data.remove(f));
+  db.collection("rutas").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      doc.ref.collection("ubicaciones").orderBy("timestamp").get().then(subsnap => {
+        const path = [];
+        subsnap.forEach(subdoc => {
+          const d = subdoc.data();
+          path.push({lat: d.lat, lng: d.lng});
+        });
+        if (path.length > 0) {
+          const poly = new google.maps.Polyline({
+            path,
+            geodesic: true,
+            strokeColor: '#' + Math.floor(Math.random()*16777215).toString(16), // color aleatorio
+            strokeOpacity: 0.7,
+            strokeWeight: 4,
+            map: map,
+          });
+        }
+      });
+    });
+  });
+}
+window.mostrarTodasTrayectorias = mostrarTodasTrayectorias;
 
-// --- Ver en vivo ---
+// --- CARGAR RUTA DESDE CSV (VARIAS) ---
+function cargarRutaDesdeCSV() {
+  const input = document.getElementById('inputArchivoCSV');
+  const files = input.files;
+  if (!files.length) return alert("Selecciona al menos un archivo CSV");
+
+  // Limpiar rutas previas
+  polylinesCSV.forEach(poly => poly.setMap(null));
+  polylinesCSV = [];
+  let rutasHtml = "";
+
+  Array.from(files).forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const csv = e.target.result;
+      const lines = csv.split('\n').filter(l => l.trim().length > 0);
+      const path = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        if (parts.length < 2) continue;
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          path.push({ lat, lng });
+        }
+      }
+
+      if (path.length) {
+        const poly = new google.maps.Polyline({
+          path,
+          geodesic: true,
+          strokeColor: "#" + Math.floor(Math.random()*16777215).toString(16),
+          strokeOpacity: 1.0,
+          strokeWeight: 4,
+          map: map,
+        });
+        polylinesCSV.push(poly);
+
+        const bounds = new google.maps.LatLngBounds();
+        path.forEach(p => bounds.extend(p));
+        map.fitBounds(bounds);
+
+        rutasHtml += `<span>Ruta ${idx+1}: ${file.name}</span><br>`;
+      }
+      document.getElementById("csvRutasCargadas").innerHTML = rutasHtml;
+    };
+    reader.readAsText(file);
+  });
+}
+
+// --- SEGUIMIENTO EN VIVO ---
 function verEnVivo() {
   const nombre = document.getElementById("nombreReciclador").value.trim();
   if (!nombre) return alert("Ingrese nombre del reciclador");
 
-  const marker = new google.maps.Marker({
+  if (marcadorReciclador) marcadorReciclador.setMap(null);
+  marcadorReciclador = new google.maps.Marker({
     map,
     title: nombre,
     icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png"
@@ -169,14 +305,14 @@ function verEnVivo() {
       snap.forEach(doc => {
         const data = doc.data();
         const pos = new google.maps.LatLng(data.lat, data.lng);
-        marker.setPosition(pos);
+        marcadorReciclador.setPosition(pos);
         map.setCenter(pos);
       });
     });
 }
 window.verEnVivo = verEnVivo;
 
-// --- Cámara ---
+// --- CÁMARA Y FOTOS EN RUTA ---
 function toggleCamera() {
   if (photoStream) return stopCamera();
   navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(stream => {
@@ -186,10 +322,12 @@ function toggleCamera() {
   }).catch(err => alert("No se pudo activar cámara"));
 }
 function stopCamera() {
-  photoStream.getTracks().forEach(track => track.stop());
-  document.getElementById("cameraFeed").srcObject = null;
-  document.getElementById("cameraContainer").style.display = "none";
-  photoStream = null;
+  if (photoStream) {
+    photoStream.getTracks().forEach(track => track.stop());
+    document.getElementById("cameraFeed").srcObject = null;
+    document.getElementById("cameraContainer").style.display = "none";
+    photoStream = null;
+  }
 }
 window.toggleCamera = toggleCamera;
 
@@ -208,6 +346,16 @@ function takePicture() {
   document.getElementById("photoPreview").innerHTML = "";
   document.getElementById("photoPreview").appendChild(img);
 
+  // Obtener ubicación GPS al tomar la foto
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const altitud = pos.coords.altitude || 0;
+    guardarFoto(imgData, lat, lng, altitud);
+  }, () => {
+    guardarFoto(imgData, null, null, null); // Sin ubicación
+  });
+
   // Mostrar botón para WhatsApp
   const whatsappContainer = document.getElementById("whatsappBtnContainer");
   whatsappContainer.innerHTML = `
@@ -215,13 +363,18 @@ function takePicture() {
       <button style="background:#25d366;color:white;">Enviar foto por WhatsApp</button>
     </a>
   `;
+}
 
-  const nombre = document.getElementById("nombreReciclador").value.trim() || "anonimo";
+function guardarFoto(imgData, lat, lng, altitud) {
+  const nombre = usuarioActual || document.getElementById("nombreReciclador").value.trim() || "anonimo";
   const nombreArchivo = `${nombre}_${Date.now()}.png`;
   storage.ref("fotos/" + nombreArchivo).putString(imgData, 'data_url').then(() => {
     db.collection("fotos").add({
       nombre,
       url: "fotos/" + nombreArchivo,
+      lat,
+      lng,
+      altitud,
       timestamp: new Date()
     });
     alert("Foto guardada correctamente");
@@ -229,13 +382,44 @@ function takePicture() {
 }
 window.takePicture = takePicture;
 
-function mostrarTodasFotos() {
+// --- VER FOTOS EN EL MAPA ---
+function mostrarFotosEnMapa() {
+  // Limpia marcadores anteriores
+  marcadoresFotos.forEach(m => m.setMap(null));
+  marcadoresFotos = [];
   db.collection("fotos").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.lat && d.lng) {
+        storage.ref(d.url).getDownloadURL().then(url => {
+          const marker = new google.maps.Marker({
+            map,
+            position: { lat: d.lat, lng: d.lng },
+            icon: {
+              url,
+              scaledSize: new google.maps.Size(40, 40)
+            },
+            title: d.nombre
+          });
+          marcadoresFotos.push(marker);
+        });
+      }
+    });
+  });
+}
+window.mostrarFotosEnMapa = mostrarFotosEnMapa;
+
+// --- VER TODAS LAS FOTOS ---
+function mostrarTodasFotos() {
+  db.collection("fotos").orderBy("timestamp", "desc").get().then(snapshot => {
     let html = "";
     snapshot.forEach(doc => {
       const d = doc.data();
       storage.ref(d.url).getDownloadURL().then(url => {
-        html += `<img src="${url}" width="100">`;
+        html += `<div style="display:inline-block; margin:8px;">
+          <img src="${url}" width="100"><br>
+          <span>${d.nombre}<br>${d.lat ? `(${d.lat.toFixed(4)},${d.lng.toFixed(4)})` : ''}<br>${d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleString() : ''}</span>
+        </div>`;
         document.getElementById("photoPreview").innerHTML = html;
       });
     });
@@ -243,56 +427,98 @@ function mostrarTodasFotos() {
 }
 window.mostrarTodasFotos = mostrarTodasFotos;
 
-function mostrarFotosEnMapa() {
-  db.collection("fotos").get().then(snapshot => {
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      storage.ref(d.url).getDownloadURL().then(url => {
-        new google.maps.Marker({
-          map,
-          position: { lat: 7.0652, lng: -73.8514 }, // Coordenada simulada
-          icon: url,
-          title: d.nombre
-        });
-      });
-    });
-  });
-}
-window.mostrarFotosEnMapa = mostrarFotosEnMapa;
-
-// --- Generar reporte PDF ---
+// --- GENERAR REPORTE PDF ---
 function generarReportePDF() {
   import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js").then(jsPDFModule => {
     const { jsPDF } = jsPDFModule;
     const doc = new jsPDF();
-    const nombre = document.getElementById("nombreReciclador").value || "anonimo";
+    const nombre = usuarioActual || document.getElementById("nombreReciclador").value || "anonimo";
+    let totalKm = 0;
 
     doc.setFontSize(16);
     doc.text("Reporte de Ruta - REDECOL E.S.P.", 20, 20);
     doc.setFontSize(12);
     doc.text("Reciclador: " + nombre, 20, 30);
-    doc.text("Puntos registrados: " + rutaReciclador.length, 20, 40);
 
-    let y = 60;
-    rutaReciclador.forEach((p, i) => {
-      doc.text(`${i + 1}. ${p.lat}, ${p.lng} - ${new Date(p.timestamp).toLocaleString()}`, 20, y);
-      y += 8;
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
+    // Dirección (última conocida)
+    db.collection("usuarios").where("nombre", "==", nombre).get().then(snap => {
+      let direccion = "";
+      if (!snap.empty) {
+        direccion = snap.docs[0].data().direccion || "";
+        doc.text("Dirección: " + direccion, 20, 40);
       }
+      // Recorrido
+      let y = 55;
+      if (rutaReciclador.length === 0) {
+        doc.text("No hay puntos registrados en la sesión.", 20, y);
+      } else {
+        for (let i = 0; i < rutaReciclador.length; i++) {
+          const p = rutaReciclador[i];
+          if (i > 0) {
+            totalKm += calcularDistancia(rutaReciclador[i-1], p);
+          }
+          doc.text(
+            `${i + 1}. ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} | Alt: ${p.altitud ? p.altitud.toFixed(2) : '--'}m | ${new Date(p.timestamp).toLocaleString()}`,
+            20, y
+          );
+          y += 8;
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+        }
+        doc.text(`Kilómetros recorridos: ${(totalKm/1000).toFixed(2)} km`, 20, y+10);
+      }
+      // Añadir miniaturas de fotos
+      db.collection("fotos").where("nombre", "==", nombre).orderBy("timestamp", "desc").get().then(fotosSnap => {
+        let fy = y + 25;
+        if (!fotosSnap.empty) {
+          doc.text("Fotos tomadas en la ruta:", 20, fy);
+          fy += 10;
+          let index = 0;
+          fotosSnap.forEach(docFoto => {
+            storage.ref(docFoto.data().url).getDownloadURL().then(urlFoto => {
+              let img = new Image();
+              img.crossOrigin = "anonymous";
+              img.onload = function() {
+                doc.addImage(img, "PNG", 20, fy, 40, 30);
+                doc.text(new Date(docFoto.data().timestamp.seconds*1000).toLocaleString(), 65, fy+15);
+                fy += 35;
+                if (index === fotosSnap.size-1) doc.save("reporte_reciclador.pdf");
+              };
+              img.src = urlFoto;
+            });
+            index++;
+          });
+        } else {
+          doc.save("reporte_reciclador.pdf");
+        }
+      });
     });
-
-    doc.save("reporte_reciclador.pdf");
   });
 }
 window.generarReportePDF = generarReportePDF;
 
+function calcularDistancia(a, b) {
+  // Haversine formula
+  const R = 6371000;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const dLat = lat2 - lat1;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const x = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+  return R * c;
+}
+
+// --- DESCARGAR RUTA CSV ---
 function descargarRutaCSV() {
   if (!rutaReciclador.length) return alert("No hay datos para exportar.");
-  let csv = "Latitud,Longitud,Timestamp\n";
+  let csv = "Latitud,Longitud,Altitud,Timestamp\n";
   rutaReciclador.forEach(p => {
-    csv += `${p.lat},${p.lng},${new Date(p.timestamp).toISOString()}\n`;
+    csv += `${p.lat},${p.lng},${p.altitud || ''},${new Date(p.timestamp).toISOString()}\n`;
   });
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
@@ -302,6 +528,7 @@ function descargarRutaCSV() {
 }
 window.descargarRutaCSV = descargarRutaCSV;
 
+// --- DESCARGAR TRAYECTORIA IMAGEN ---
 function descargarTrayectoriaImagen() {
   setTimeout(() => {
     html2canvas(document.getElementById("map")).then(canvas => {
