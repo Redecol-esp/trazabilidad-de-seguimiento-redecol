@@ -51,11 +51,12 @@
     <button type="button" onclick="cambiarEstado('Disponible')">Disponible</button>
     <button type="button" onclick="cambiarEstado('En Ruta')">En Ruta</button>
     <button type="button" onclick="cambiarEstado('Finalizado')">Finalizado</button>
+    <span id="estadoActual"></span>
   </div>
 
   <h3>Visualización de Rutas:</h3>
   <div class="buttons">
-    <button type="button" onclick="cargarRuta()">Ver mi ruta</button>
+    <button type="button" onclick="verMiRuta()">Ver mi ruta</button>
     <button type="button" onclick="mostrarTrayectoria(document.getElementById('nombreReciclador').value)">Ver trayectoria individual</button>
     <button type="button" id="btnTodasTrayectorias" onclick="mostrarTodasTrayectorias()">Ver todas las trayectorias</button>
   </div>
@@ -66,8 +67,9 @@
   </div>
   
   <h3>Cargar ruta de reciclador (CSV):</h3>
-  <input type="file" id="inputArchivoCSV" accept=".csv">
-  <button type="button" onclick="cargarRutaDesdeCSV()">📤 Cargar y mostrar ruta</button>
+  <input type="file" id="inputArchivoCSV" accept=".csv" multiple>
+  <button type="button" onclick="cargarRutaDesdeCSV()">📤 Cargar y mostrar ruta(s)</button>
+  <div id="csvRutasCargadas"></div>
   
   <h3>Fotos en Ruta</h3>
   <div class="buttons">
